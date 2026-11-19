@@ -95,6 +95,20 @@ class TestSettingsObject(TestCase):
             [{"value": np.inf}, {"value": -np.inf}, {"value": np.nan}],
         )
 
+    def test_from_columns_round_trips_aggregator_with_underscore(self):
+        """Settings recovered from training columns must reproduce inference features."""
+        data = pd.DataFrame({"id": [1, 1, 1, 1], "signal": [1.0, 3.0, 3.0, 2.0]})
+        params = {"f_agg": "count_nonzero", "isabs": False, "qh": 1.0, "ql": 0.0}
+        settings = {"change_quantiles": [params]}
+        kwargs = {"column_id": "id", "n_jobs": 0, "disable_progressbar": True}
+
+        training = extract_features(data, default_fc_parameters=settings, **kwargs)
+        self.assertEqual(training.iloc[0, 0], 2)
+        recovered = from_columns(training.columns)
+        self.assertEqual(recovered, {"signal": settings})
+        inference = extract_features(data, kind_to_fc_parameters=recovered, **kwargs)
+        assert_frame_equal(inference, training)
+
     def test_from_column_correct_for_comprehensive_fc_parameters(self):
         fset = ComprehensiveFCParameters()
         X_org = extract_features(

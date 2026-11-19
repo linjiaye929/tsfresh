@@ -26,12 +26,16 @@ def get_config_from_string(parts):
     if not relevant_parts:
         return
 
-    config_kwargs = [s.rsplit("_", 1)[0] for s in relevant_parts]
-    config_values = [s.rsplit("_", 1)[1] for s in relevant_parts]
-
     dict_if_configs = {}
 
-    for key, value in zip(config_kwargs, config_values):
+    for part in relevant_parts:
+        key, quote_separator, quoted_tail = part.partition('_"')
+        if quote_separator and key.isidentifier():
+            # The writer quotes string values; an underscore inside one is data.
+            value = '"' + quoted_tail
+        else:
+            key, value = part.rsplit("_", 1)
+
         if value.lower() == "nan":
             dict_if_configs[key] = np.nan
         elif value.lower() == "-inf":
